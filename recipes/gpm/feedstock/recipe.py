@@ -183,9 +183,9 @@ pipeline = beam.Pipeline(runner="DirectRunner", options=beam.pipeline.PipelineOp
 # path = '1mo'
 # target_root = FSSpecTarget(fs, path)
 
-fs = fsspec.get_filesystem_class("s3")()
-path = 's3://carbonplan-scratch/pyramid_1yr'
-target_root = FSSpecTarget(fs, path)
+# fs = fsspec.get_filesystem_class("s3")()
+# path = 's3://carbonplan-scratch/pyramid_1yr'
+# target_root = FSSpecTarget(fs, path)
 
 # import s3fs
 # s3 = s3fs.S3FileSystem()
@@ -202,7 +202,6 @@ with pipeline as p:
 
     | 'Write Pyramid Levels'
     >> StoreToPyramid(
-        target_root=target_root,
         store_name=SHORT_NAME,
         epsg_code='4326',
         rename_spatial_dims={'lon': 'longitude', 'lat': 'latitude'},
