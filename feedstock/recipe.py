@@ -1,9 +1,12 @@
 import apache_beam as beam
+from dataclasses import dataclass
 import pandas as pd
 import xarray as xr
 import fsspec
 import s3fs
 import boto3
+from typing import Dict
+import uuid
 
 from beam_pyspark_runner.pyspark_runner import PySparkRunner
 from pangeo_forge_recipes.storage import FSSpecTarget
@@ -87,13 +90,36 @@ target_root = FSSpecTarget(fs_target, 's3://veda-pforge-emr-outputs-v3')
 #target_root = FSSpecTarget(fs_target, '/home/jovyan/outputs/')
 
 
+@dataclass
+class RechunkPerFile(beam.PTransform):
+    target_chunks: Dict
+
+    def write_intermediate_chunked(self, ds: xr.Dataset) -> xr.Dataset:
+        rechunked_ds = ds.chunk(self.target_chunks)
+        zarrstore = f's3://veda-pforge-emr-intermediate-store/{uuid.uuid1()}'
+        fs_intermediate = s3fs.S3FileSystem(**target_fsspec_kwargs)
+        s3mapping = s3fs.S3Map(zarrstore, fs_intermediate)
+        rechunked_ds.to_zarr(s3mapping)
+        return xr.open_dataset(s3mapping, chunks=self.target_chunks)
+
+    def expand(self, pcoll):
+        return pcoll | "Rechunk and open with Xarray" >> beam.MapTuple(
+            lambda k, v: (
+                k, self.write_intermediate_chunked(v)
+            )
+        )
+
+target_chunks = {'time': 30, 'lon': 36, 'lat': 18}
+
 with beam.Pipeline(runner=PySparkRunner()) as p:
     (p | beam.Create(pattern.items())
 	| OpenURLWithFSSpec(open_kwargs=source_fsspec_kwargs)
 	| OpenWithXarray(file_type=pattern.file_type)
+    | RechunkPerFile(target_chunks=target_chunks)
 	| StoreToZarr(
         target_root=target_root,
 		store_name="gpm20yr.zarr",
 		combine_dims=pattern.combine_dim_keys,
+        target_chunks=target_chunks
 	))
 
