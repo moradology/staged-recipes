@@ -86,7 +86,7 @@ target_fsspec_kwargs = {
 }
 fs_target = s3fs.S3FileSystem(**target_fsspec_kwargs)
 #fs_target = fsspec.implementations.local.LocalFileSystem()
-target_root = FSSpecTarget(fs_target, 's3://veda-pforge-emr-outputs-v3')
+target_root = FSSpecTarget(fs_target, 's3://veda-pforge-emr-outputs-v4')
 #target_root = FSSpecTarget(fs_target, '/home/jovyan/outputs/')
 
 
@@ -96,7 +96,7 @@ class RechunkPerFile(beam.PTransform):
 
     def write_intermediate_chunked(self, ds: xr.Dataset) -> xr.Dataset:
         rechunked_ds = ds.chunk(self.target_chunks)
-        zarrstore = f's3://veda-pforge-emr-intermediate-store/{uuid.uuid1()}'
+        zarrstore = f's3://veda-pforge-emr-intermediate-store/{uuid.uuid1()}/'
         fs_intermediate = s3fs.S3FileSystem(**target_fsspec_kwargs)
         s3mapping = s3fs.S3Map(zarrstore, fs_intermediate)
         rechunked_ds.to_zarr(s3mapping)
