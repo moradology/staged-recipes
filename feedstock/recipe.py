@@ -100,7 +100,7 @@ class RechunkPerFile(beam.PTransform):
         fs_intermediate = s3fs.S3FileSystem(**target_fsspec_kwargs)
         s3mapping = s3fs.S3Map(zarrstore, fs_intermediate)
         rechunked_ds.to_zarr(s3mapping)
-        return xr.open_dataset(s3mapping, chunks=self.target_chunks)
+        return xr.open_zarr(s3mapping)
 
     def expand(self, pcoll):
         return pcoll | "Rechunk and open with Xarray" >> beam.MapTuple(
