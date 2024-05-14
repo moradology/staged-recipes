@@ -100,10 +100,10 @@ class RechunkPerFile(beam.PTransform):
         fs_intermediate = s3fs.S3FileSystem(**target_fsspec_kwargs)
 
         with fs_intermediate.open(ncstore, 'wb') as write_file:
-            rechunked_ds.to_netcdf(write_file, engine='netcdf4', format='NETCDF4')
+            rechunked_ds.to_netcdf(write_file, format='NETCDF3_64BIT')
 
         ncfile_read = fs_intermediate.open(ncstore, 'rb')
-        return xr.open_dataset(ncfile_read, engine='netcdf4', chunks=self.target_chunks)
+        return xr.open_dataset(ncfile_read, format='NETCDF3_64BIT', chunks=self.target_chunks)
 
     def expand(self, pcoll):
         return pcoll | "Rechunk and open with Xarray" >> beam.MapTuple(
