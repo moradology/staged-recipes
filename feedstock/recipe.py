@@ -96,13 +96,12 @@ class RechunkPerFile(beam.PTransform):
 
     def write_intermediate_chunked(self, ds: xr.Dataset) -> xr.Dataset:
         rechunked_ds = ds.chunk(self.target_chunks)
-        ncstore = f's3://veda-pforge-emr-intermediate-store/{uuid.uuid1()}'
+        ncstore = f's3://veda-pforge-emr-intermediate-store/{uuid.uuid1()}.nc'
         fs_intermediate = s3fs.S3FileSystem(**target_fsspec_kwargs)
-        ncfile_write = fs_intermediate.open(ncstore)
-        rechunked_ds.to_netcdf(ncfile_write.open(), format='NETCDF4')
-        ncfile_write.close()
-        ncfile_read = fs_intermediate.open(ncstore).open()
-        return xr.open_dataset(ncfile_read, chunks=None)
+        with fs_intermediate.open(ncstore) as write_file:
+            rechunked_ds.to_netcdf(write_file.open(), format='NETCDF4')
+        ncfile_read = fs_intermediate.open(ncstore)
+        return xr.open_dataset(ncfile_read.open(), chunks=None)
 
     def expand(self, pcoll):
         return pcoll | "Rechunk and open with Xarray" >> beam.MapTuple(
