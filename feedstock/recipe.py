@@ -160,10 +160,9 @@ with beam.Pipeline(runner=PySparkRunner()) as p:
 	| OpenWithXarray(file_type=pattern.file_type)
     | RechunkPerFile(target_chunks=target_chunks)
 	| WriteCombinedReference(
-        target_root=target_root,
 		store_name="kerchunk-rechunk-npztest.zarr",
-		combine_dims=CONCAT_DIMS,
+		concat_dims=CONCAT_DIMS,
         identical_dims=IDENTICAL_DIMS,
-        target_chunks=target_chunks
+        target_root=target_root,
 	))
 
