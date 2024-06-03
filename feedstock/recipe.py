@@ -20,7 +20,7 @@ from pangeo_forge_recipes.transforms import (
     Indexed,
     OpenURLWithFSSpec,
     OpenWithXarray,
-    WriteCombinedReferences
+    WriteCombinedReference
 )
 
 import logging
@@ -159,7 +159,7 @@ with beam.Pipeline(runner=PySparkRunner()) as p:
 	| OpenURLWithFSSpec(open_kwargs=source_fsspec_kwargs)
 	| OpenWithXarray(file_type=pattern.file_type)
     | RechunkPerFile(target_chunks=target_chunks)
-	| WriteCombinedReferences(
+	| WriteCombinedReference(
         target_root=target_root,
 		store_name="kerchunk-rechunk-npztest.zarr",
 		combine_dims=CONCAT_DIMS,
