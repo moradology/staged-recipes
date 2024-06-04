@@ -14,7 +14,7 @@ from typing import Dict
 import uuid
 
 from beam_pyspark_runner.pyspark_runner import PySparkRunner
-from pangeo_forge_recipes.storage import FSSpecTarget
+from pangeo_forge_recipes.storage import CacheFSSpecTarget, FSSpecTarget
 from pangeo_forge_recipes.patterns import ConcatDim, FilePattern
 from pangeo_forge_recipes.transforms import (
     Indexed,
@@ -133,10 +133,6 @@ class RechunkPerFile(beam.PTransform):
                 else:
                     updated_refs[k] = v
             references['refs'] = updated_refs
-
-            # Clean up the temporary directory
-            shutil.rmtree(temp_dir)
-
             return references
         except Exception as e:
             logging.error(f"An error occurred: {e}")
@@ -156,7 +152,10 @@ target_chunks = {'time': 30, 'lon': 36, 'lat': 18}
 
 with beam.Pipeline(runner=PySparkRunner()) as p:
     (p | beam.Create(pattern.items())
-	| OpenURLWithFSSpec(open_kwargs=source_fsspec_kwargs)
+	| OpenURLWithFSSpec(
+        cache=CacheFSSpecTarget.from_url("/tmp"),
+        open_kwargs=source_fsspec_kwargs
+      )
 	| OpenWithXarray(file_type=pattern.file_type)
     | RechunkPerFile(target_chunks=target_chunks)
 	| WriteCombinedReference(
